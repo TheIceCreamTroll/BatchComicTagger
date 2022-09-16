@@ -1,0 +1,60 @@
+
+ComicInfo:
+  Title: 
+  Series: 
+  Number: 
+  Count: 
+  Volume: 
+  AlternateSeries: 
+  AlternateNumber: 
+  AlternateCount: 
+  Summary: 
+  Notes: 
+  Year: 
+  Month: 
+  Day: 
+  Writer: 
+  Penciller: 
+  Inker: 
+  Colorist: 
+  Letterer: 
+  CoverArtist: 
+  Editor: 
+  Publisher: 
+  Imprint: 
+  Genre: 
+  Web: 
+  PageCount: 
+  LanguageISO: 
+  Format: 
+  BlackAndWhite: 
+  Manga: 
+  Characters: 
+  Teams: 
+  Locations: 
+  ScanInformation: 
+  StoryArc: 
+  SeriesGroup: 
+  AgeRating: 
+  Pages: 
+  CommunityRating: 
+
+autotag:
+  autonumber:
+  autotitle:
+
+fetch:
+  url: 
+  Title: 
+  Volume: 
+  Summary: 
+  StoryArc: 
+  ReleaseDate: 
+  Characters: 
+  Exclude:
+    - ')' # YAML list
+
+
+# Exclude can also be a string of comma-separated values
+#Exclude: 'flashback, fantasy, cameo, extra page, mentioned, voice only, imagination, image, text only, guards, (photo)'
+
