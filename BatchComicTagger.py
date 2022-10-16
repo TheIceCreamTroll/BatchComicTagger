@@ -68,7 +68,6 @@ def parse(matchingwords, filename):
 
 
 def parseTitle(filename):
-    # existingTag = tree.find(key) # TODO - Consider enabling/disabling overwriting existing titles
     parts = filename.rstrip(ext).split(' - ', 1)
     if len(parts) == 2:
         return parts[-1].strip()
@@ -78,9 +77,10 @@ def parseTitle(filename):
 
 def updateTag(key, value, root):
     existingTag = tree.find(key)
+    value = str(value)
 
     if existingTag is not None:
-        existingTag.text = str(value)
+        existingTag.text = value
         if value:
             print(f"    updating {key} tag from '{existingTag.text}' -> '{value}'")
         else:
@@ -265,9 +265,9 @@ for file in os.listdir(cwd):
             chapter = parse(validchapters, file)
 
             if not skipvol and volume is not None:
-                updateTag("Volume", str(volume).lstrip("0"), root)  # TODO - Volume 0 currently saves as nothing (probably bc strip())
+                updateTag("Volume", volume, root)
             if chapter:
-                updateTag("Number", str(chapter).lstrip("0"), root)  # TODO - Chapter 0 currently saves as nothing (probably bc strip())
+                updateTag("Number", chapter, root)
 
         if autotag_autotitle:
             updateTag("Title", parseTitle(file), root)
