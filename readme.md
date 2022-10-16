@@ -40,7 +40,6 @@ Also, make sure to double-check the fetched data. If, for example, chapter 30 wa
  - `overwrite` allows new files to overwrite old ones. Takes a bool and defaults to `false`
  - `removeoriginals` removes the original file after creating the new one. Takes a bool and defaults to `false`
 
-
 ## Installation
  1. Clone the repository `git clone https://github.com/TheIceCreamTroll/BatchComicTagger.git`
  2. Enter the project's directory `cd BatchComicTagger`

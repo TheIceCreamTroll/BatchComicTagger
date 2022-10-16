@@ -14,7 +14,7 @@ import os
 # XML Parser and some constants
 xmlparser = ET.XMLParser(remove_blank_text=True)
 ext = '.cbz'
-cwd = os.getcwd()
+cwd = Path.cwd()
 xmlfile = 'ComicInfo.xml'
 validvolumes = ("Vol", "Vol.", "Volume", "Volume.")
 validchapters = ("Ch", "Ch.", "Chapter", "Chapter.")
@@ -27,7 +27,7 @@ yml = config.get()
 
 # Argparse
 parser = argparse.ArgumentParser(description='Batch comicinfo.xml metadata')
-parser.add_argument('-d,', '--dir', default=os.getcwd(), help='Directory to run in')
+parser.add_argument('-d,', '--dir', default=cwd, help='Directory to run in')
 parser.add_argument('-f,', '--fetch', action='store_true', help='Enable fetching data from a Fandom wiki')
 
 args = parser.parse_args()
@@ -98,213 +98,217 @@ def createComicInfo(xmlpath, file):
         print(f"{xmlfile} not detected in {file}. Creating it now.")
         f.write(defaultXML)
 
-def main():
-    # ComicInfo Autotag options
-    autotag_autonumber = checkConfig(('autotag', 'autonumber'))
-    autotag_autotitle = checkConfig(('autotag', 'autotitle'))
 
-    # ComicInfo Fetch options
-    fetch_url = checkConfig(('fetch', 'url'))
-    fetch_storyarc = checkConfig(('fetch', 'StoryArc'))
-    fetch_characters = checkConfig(('fetch', 'Characters'))
-    fetch_exclude = checkConfig(('fetch', 'Exclude'))
-    fetch_releasedate = checkConfig(('fetch', 'ReleaseDate'))
-    fetch_summary = checkConfig(('fetch', 'Summary'))
-    fetch_volume = checkConfig(('fetch', 'Volume'))
-    fetch_title = checkConfig(('fetch', 'Title'))
+def cleanup(extract_path=None, output_path=None):
+    if extract_path and extract_path.exists():
+        shutil.rmtree(extract_path)
 
-    # ComicInfo tools options
-    jpeg2png = checkConfig(('tools', 'jpeg2png'))
-    tools_runafter = checkConfig(('tools', 'runafter'))
+    if output_path and output_path.exists():
+        if len(os.listdir(output_path)) == 0:
+            shutil.rmtree(output_path)
 
-    # ComicInfo saveto options
-    saveto_path = checkConfig(('saveto', 'path'))
-    saveto_overwrite = checkConfig(('saveto', 'overwrite'))
-    saveto_removeoriginals = checkConfig(('saveto', 'removeoriginals'))
+# ComicInfo Autotag options
+autotag_autonumber = checkConfig(('autotag', 'autonumber'))
+autotag_autotitle = checkConfig(('autotag', 'autotitle'))
 
-    for file in os.listdir(cwd):
-        if file.endswith(ext):
-            ext_dest = os.path.join(cwd, 'output', 'extracted', file.rsplit('.', 1)[0])
+# ComicInfo Fetch options
+fetch_url = checkConfig(('fetch', 'url'))
+fetch_storyarc = checkConfig(('fetch', 'StoryArc'))
+fetch_characters = checkConfig(('fetch', 'Characters'))
+fetch_exclude = checkConfig(('fetch', 'Exclude'))
+fetch_releasedate = checkConfig(('fetch', 'ReleaseDate'))
+fetch_summary = checkConfig(('fetch', 'Summary'))
+fetch_volume = checkConfig(('fetch', 'Volume'))
+fetch_title = checkConfig(('fetch', 'Title'))
 
-            if not os.path.exists(ext_dest):
-                os.makedirs(ext_dest)
+# ComicInfo tools options
+jpeg2png = checkConfig(('tools', 'jpeg2png'))
+tools_runafter = checkConfig(('tools', 'runafter'))
 
-            with zipfile.ZipFile(os.path.join(cwd, file), 'r') as f:
-                f.extractall(ext_dest)
+# ComicInfo saveto options
+saveto_path = checkConfig(('saveto', 'path'))
+saveto_overwrite = checkConfig(('saveto', 'overwrite'))
+saveto_removeoriginals = checkConfig(('saveto', 'removeoriginals'))
 
-            do_cleanup = True
-            file_list = list(Path(ext_dest).rglob('*'))
-            xmlpath = os.path.join(ext_dest, xmlfile)
+# Clear out any
+cleanup(cwd / 'output' / 'extracted')
 
-            if jpeg2png:
-                print(f'starting jpeg2png')
-                start = time()
+for file in os.listdir(cwd):
+    if file.endswith(ext):
+        ext_dest = cwd / 'output' / 'extracted' / file.rsplit('.', 1)[0]
 
-            for jpeg in file_list:
-                if str(jpeg).endswith(('.jpeg', '.jpg')) and jpeg2png:
-                    res = subprocess.run([jpeg2png, '-f', '-s', '-i 100', jpeg], capture_output=True)
-                    if res.returncode == 0:
-                        os.remove(jpeg)
-                    else:
-                        print(f"Warning! [{jpeg}] couldn't be processed by jpeg2png\nError: {res.stderr.decode().strip()}")
+        if not ext_dest.exists():
+            os.makedirs(ext_dest)
 
-                # print(jpeg)
-                if str(jpeg).endswith('.xml'):
-                    print(f"{xmlfile} found in {file}")
-                    break  # There should only be one .xml file per cbz
-            else:
-                createComicInfo(xmlpath, file)
+        with zipfile.ZipFile(cwd / file, 'r') as f:
+            f.extractall(ext_dest)
 
-            if jpeg2png:
-                print(f'jpeg2png finished. {round(time() - start, 2)}s elapsed')
+        do_cleanup = True
+        file_list = list(Path(ext_dest).rglob('*'))
+        xmlpath = ext_dest / xmlfile
 
-            # Process the xml
-            xmlfilepath = os.path.join(ext_dest, xmlfile)
-            tree = ET.parse(xmlfilepath, xmlparser)
-            root = tree.getroot()  # gets the parent tag of the xml document
+        if jpeg2png:
+            print('starting jpeg2png')
+            start = time()
 
-            skipvol = False
+        for jpeg in file_list:
+            if jpeg.suffix in (('.jpeg', '.jpg')) and jpeg2png:
+                res = subprocess.run([jpeg2png, '-f', '-s', '-i 100', jpeg], capture_output=True)
+                if res.returncode == 0:
+                    jpeg.unlink()
+                else:
+                    print(f"Warning! [{jpeg}] couldn't be processed by jpeg2png\nError: {res.stderr.decode().strip()}")
 
-            if fetch_url and args.fetch:
-                url = yml['fetch']['url']
+            # print(jpeg)
+            if jpeg.suffix == '.xml':
+                print(f"{xmlfile} found in {file}")
+                break  # There should only be one .xml file per cbz
+        else:
+            createComicInfo(xmlpath, file)
+
+        if jpeg2png:
+            print(f'jpeg2png finished. {round(time() - start, 2)}s elapsed')
+
+        # Process the xml
+        xmlfilepath = ext_dest / xmlfile
+        tree = ET.parse(xmlfilepath, xmlparser)
+        root = tree.getroot()  # gets the parent tag of the xml document
+
+        skipvol = False
+
+        if fetch_url and args.fetch:
+            url = yml['fetch']['url']
+            chapter = parse(validchapters, file)
+
+            # TODO - add a zfill function for the chapter
+            soup = fandom_fetcher.make_soup(url, chapter)
+
+            if fetch_storyarc:
+                chapter = parse(validchapters, file)
+                value = fandom_fetcher.get_story_arc(soup)
+
+                if value:
+                    updateTag('StoryArc', value, root)
+                else:
+                    print("    Couldn't scrape story arc. Leaving blank")
+
+            if fetch_characters:
                 chapter = parse(validchapters, file)
 
-                # TODO - add a zfill function for the chapter
-                soup = fandom_fetcher.make_soup(url, chapter)
+                if fetch_exclude:
+                    exclude = yml['fetch']['Exclude']
+                    if isinstance(exclude, str):
+                        exclude = yml['fetch']['Exclude'].split(',')
 
-                if fetch_storyarc:
-                    chapter = parse(validchapters, file)
-                    value = fandom_fetcher.get_story_arc(soup)
+                else:
+                    exclude = []
 
-                    if value:
-                        updateTag('StoryArc', value, root)
-                    else:
-                        print("    Couldn't scrape story arc. Leaving blank")
+                characters = fandom_fetcher.get_characters(soup, exclude)
+                value = ', '.join(characters)
+                # if "(" in value:
+                #    if input(f"{value}\nParenthesis detected. Should we keep going? (Y/n)").lower() == "n":
+                #        sys.exit(0)
 
-                if fetch_characters:
-                    chapter = parse(validchapters, file)
+                if value:
+                    updateTag('Characters', value, root)
 
-                    if fetch_exclude:
-                        exclude = yml['fetch']['Exclude']
-                        if isinstance(exclude, str):
-                            exclude = yml['fetch']['Exclude'].split(',')
-
-                    else:
-                        exclude = []
-
-                    characters = fandom_fetcher.get_characters(soup, exclude)
-                    value = ', '.join(characters)
-                    # if "(" in value:
-                    #    if input(f"{value}\nParenthesis detected. Should we keep going? (Y/n)").lower() == "n":
-                    #        sys.exit(0)
-
-                    if value:
-                        updateTag('Characters', value, root)
-
-                if fetch_releasedate:
-                    chapter = parse(validchapters, file)
-                    skip = False
-
-                    try:
-                        value = fandom_fetcher.get_release_date(soup)
-                    except AttributeError:
-                        print(f"Couldn't scrape release date. Go to\n{url}{chapter}\nand verify the date exists\n\n")
-                        choice = input("Ignore this file and continue to tag?\n"
-                                       "i = ignore file\n"
-                                       "b = leave day, month and year blank\n"
-                                       #"a = add {thinginparenthesis} to exclusion list\n"
-                                       "q = quit\n").lower()
-                        if choice == 'i':
-                            continue
-                        if choice == 'b':
-                            skip = True
-                        elif choice == 'q':
-                            sys.exit(0)
-
-                    if not skip:
-                        updateTag('Day', value[0], root)
-                        updateTag('Month', value[1], root)
-                        updateTag('Year', value[2], root)
-
-                if fetch_summary:
-                    chapter = parse(validchapters, file)
-                    try:
-                        value = fandom_fetcher.get_summary(soup)
-                        updateTag('Summary', value, root)
-                    except AttributeError:
-                        print("Summary not found. Either doesn't exist, or needs webscraping modified.")
-
-                if fetch_volume:
-                    skipvol = True
-                    chapter = parse(validchapters, file)
-                    value = fandom_fetcher.get_volume(soup)
-
-                    if value:
-                        updateTag('Volume', value, root)
-
-                if fetch_title:
-                    chapter = parse(validchapters, file)
-                    value = fandom_fetcher.get_title(soup)
-                    if value:
-                        updateTag('Title', value, root)
-
-            if autotag_autonumber:
-                if not skipvol:
-                    volume = parse(validvolumes, file)
+            if fetch_releasedate:
                 chapter = parse(validchapters, file)
+                skip = False
 
-                if not skipvol and volume is not None:
-                    updateTag("Volume", str(volume).lstrip("0"), root)  # TODO - Volume 0 currently saves as nothing (probably bc strip())
-                if chapter:
-                    updateTag("Number", str(chapter).lstrip("0"), root)  # TODO - Chapter 0 currently saves as nothing (probably bc strip())
+                try:
+                    value = fandom_fetcher.get_release_date(soup)
+                except AttributeError:
+                    print(f"Couldn't scrape release date. Go to\n{url}{chapter}\nand verify the date exists\n\n")
+                    choice = input("Ignore this file and continue to tag?\n"
+                                   "i = ignore file\n"
+                                   "b = leave day, month and year blank\n"
+                                   #"a = add {thinginparenthesis} to exclusion list\n"
+                                   "q = quit\n").lower()
+                    if choice == 'i':
+                        continue
+                    if choice == 'b':
+                        skip = True
+                    elif choice == 'q':
+                        sys.exit(0)
 
-            if autotag_autotitle:
-                updateTag("Title", parseTitle(file), root)
+                if not skip:
+                    updateTag('Day', value[0], root)
+                    updateTag('Month', value[1], root)
+                    updateTag('Year', value[2], root)
 
-            for key in yml['ComicInfo']:
-                value = yml['ComicInfo'][key]
-                if value or isinstance(value, str):
-                    updateTag(key, value, root)
+            if fetch_summary:
+                chapter = parse(validchapters, file)
+                try:
+                    value = fandom_fetcher.get_summary(soup)
+                    updateTag('Summary', value, root)
+                except AttributeError:
+                    print("Summary not found. Either doesn't exist, or needs webscraping modified.")
 
-            print("")
+            if fetch_volume:
+                skipvol = True
+                chapter = parse(validchapters, file)
+                value = fandom_fetcher.get_volume(soup)
 
-            ET.ElementTree(root).write(xmlfilepath, pretty_print=True, xml_declaration=True, encoding="utf-8")
+                if value:
+                    updateTag('Volume', value, root)
 
-            # Save the new file
-            root_dir = Path.cwd() / 'output'
+            if fetch_title:
+                chapter = parse(validchapters, file)
+                value = fandom_fetcher.get_title(soup)
+                if value:
+                    updateTag('Title', value, root)
 
-            if saveto_path:
-                save_to = Path(saveto_path)
-                if not save_to.exists():
-                    save_to.mkdir(parents=True)
-                output_dir = Path(save_to.resolve()) / file
-            else:
-                output_dir = Path(root_dir) / file
+        if autotag_autonumber:
+            if not skipvol:
+                volume = parse(validvolumes, file)
+            chapter = parse(validchapters, file)
 
-            if output_dir.exists() and not saveto_overwrite:
-                raise Exception(f"Destination file [{output_dir}] already exists")
+            if not skipvol and volume is not None:
+                updateTag("Volume", str(volume).lstrip("0"), root)  # TODO - Volume 0 currently saves as nothing (probably bc strip())
+            if chapter:
+                updateTag("Number", str(chapter).lstrip("0"), root)  # TODO - Chapter 0 currently saves as nothing (probably bc strip())
 
-            # Create final file
-            ext_dest = Path(ext_dest)
-            with zipfile.ZipFile(output_dir, 'w', zipfile.ZIP_STORED) as archive:
-                for file_path in ext_dest.rglob("*"):
-                    archive.write(file_path, arcname=file_path.relative_to(ext_dest))
+        if autotag_autotitle:
+            updateTag("Title", parseTitle(file), root)
 
-            # Cleanup
-            if saveto_removeoriginals:
-                Path(file).resolve().unlink()
+        for key in yml['ComicInfo']:
+            value = yml['ComicInfo'][key]
+            if value or isinstance(value, str):
+                updateTag(key, value, root)
 
-            shutil.rmtree(os.path.join(cwd, 'output', 'extracted', ext_dest))
+        print("")
 
-    if do_cleanup:
-        shutil.rmtree(os.path.join(cwd, 'output', 'extracted'))
+        ET.ElementTree(root).write(xmlfilepath, pretty_print=True, xml_declaration=True, encoding="utf-8")
 
-        if len(os.listdir(root_dir)) == 0:
-            shutil.rmtree(os.path.join(cwd, 'output'))
+        # Save the new file
+        root_dir = cwd / 'output'
 
-    if tools_runafter:
-        subprocess.run(tools_runafter)
-    print("Done")
+        if saveto_path:
+            save_to = Path(saveto_path)
+            if not save_to.exists():
+                save_to.mkdir(parents=True)
+            output_dir = save_to.resolve() / file
+        else:
+            output_dir = root_dir / file
 
+        if output_dir.exists() and not saveto_overwrite:
+            raise Exception(f"Destination file [{output_dir}] already exists")
 
-main()
+        # Create final file
+        with zipfile.ZipFile(output_dir, 'w', zipfile.ZIP_STORED) as archive:
+            for file_path in ext_dest.rglob("*"):
+                archive.write(file_path, arcname=file_path.relative_to(ext_dest))
+
+        # Cleanup
+        if saveto_removeoriginals:
+            Path(file).resolve().unlink()
+
+        shutil.rmtree(cwd / 'output' / 'extracted' / ext_dest)
+
+if do_cleanup:
+    cleanup(cwd / 'output' / 'extracted', cwd / 'output')
+
+if tools_runafter:
+    subprocess.run(tools_runafter)
+print("Done")
