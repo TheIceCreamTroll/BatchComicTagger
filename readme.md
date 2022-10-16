@@ -32,6 +32,15 @@ Due to the inconsistencies between various Fandom wikis, you may need to modify 
 
 Also, make sure to double-check the fetched data. If, for example, chapter 30 was initially released, then re-ordered to be chapter 31 in its volume release, the wiki may use either 30 or 31 for the url, potentially causing the wrong data to be fetched
 
+### tools
+ - `jpeg2png` should be set to the path of the [jpeg2png](https://github.com/victorvde/jpeg2png) executable. It can be downloaded from [here](https://github.com/TheIceCreamTroll/jpeg2png) (a fork with some fixes - recommended) or [here](https://github.com/victorvde/jpeg2png) (the original)
+ - `runafter` should be set to the absolute path of a script you want to run after BatchComicTagger has finished
+### saveto
+ - `path` sets the files will be saved to. Can be relative or absolute. If left blank, it will default to `current_directory/output`
+ - `overwrite` allows new files to overwrite old ones. Takes a bool and defaults to `false`
+ - `removeoriginals` removes the original file after creating the new one. Takes a bool and defaults to `false`
+
+
 ## Installation
  1. Clone the repository `git clone https://github.com/TheIceCreamTroll/BatchComicTagger.git`
  2. Enter the project's directory `cd BatchComicTagger`
@@ -44,8 +53,8 @@ Also, make sure to double-check the fetched data. If, for example, chapter 30 wa
 ## Running
 1. Place and edit a `ComicInfo.yaml` file into the folder with the .cbz files you wish to tag
 2. Run `BatchComicTagger.py`
-3. Processed files will be placed in `output/`
+3. Processed files will be placed in (by default) `current_directory/output`
 
 I recommend keeping `BatchComicTagger.py` in the folder you cloned it to and calling it from a `.bat` / `.sh` script alongside `ComicInfo.yaml`. Here are some examples:
  - Windows: `python "PATH_TO_BatchComicTagger.py" --dir "%CD%" --fetch`
- - Linux / MacOS: `python "PATH_TO_BatchComicTagger.py" --dir "$(pwd)" --fetch` (haven't tested but probably works)
+ - Linux / MacOS: `python "PATH_TO_BatchComicTagger.py" --dir "$(pwd)" --fetch` (haven't tested, but it probably works)

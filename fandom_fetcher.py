@@ -43,7 +43,9 @@ def get_id(soup, ids=None, next_tag=None):
 
 # Consider allowing data_sources / ids to be passed in ComicInfo.yaml
 def get_characters(soup, exclude_list=[]):
-    section_data = get_id(soup, ('Characters', 'character', 'Characters_in_Order_of_Appearance', 'Characters_in_Appearance')).text.strip()
+    section_data = get_id(soup, ('Characters', 'character', 'Characters_in_Order_of_Appearance',
+                                 'Characters_in_Appearance', 'Character_in_Order_of_Appearances',
+                                 'Character_in_Order_of_Appearance')).text.strip()
 
     character_list = section_data.split('\n')
     #character_list = []
@@ -76,7 +78,7 @@ def get_characters(soup, exclude_list=[]):
     return filtered_list
 
 
-def get_summary(soup):
+def get_summary(soup): # TODO - Add ability to limit sentances?
     return get_id(soup, ids=('Summary', 'summary'), next_tag='p').text.strip()
 
 
